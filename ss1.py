@@ -8,22 +8,59 @@ from openpyxl.styles import NamedStyle, Font, Alignment, Border, Side, PatternFi
 from openpyxl.styles import borders
 from openpyxl.worksheet.dimensions import ColumnDimension
 import warnings
-
 warnings.simplefilter("ignore")
+
+
 
 # Streamlit App
 st.title("PTML Site Data Base Management")
 
-# Input and Output File Paths
-#input_path = st.text_input("Input Excel File Path 📂", "C:/Users/UWX161178/S_Shah_Sb/Cells_DB_Mid_Dec_2024.xlsx")
-input_path = st.file_uploader("Upload Excel File 📂", type=["xlsx"])
-#output_path = st.text_input("Output Excel File Path 📤", "C:/Users/UWX161178/S_Shah_Sb/PTML_Cell_List.xlsx")
-# Save Processed Data to an Excel File in Memory
-output_buffer = io.BytesIO()
-with pd.ExcelWriter(output_buffer, engine='xlsxwriter') as writer:
-    for tech, df in processed_data.items():
-        df.to_excel(writer, sheet_name=tech, index=False)
-        output_buffer.seek(0)
+# Upload Excel File
+uploaded_file = st.file_uploader("Upload Excel File 📂", type=["xlsx"])
+
+if uploaded_file:
+    # Load sheet names dynamically
+    @st.cache_data
+    def load_sheets(file):
+        """Load sheet names from the uploaded Excel file."""
+        try:
+            return pd.ExcelFile(file).sheet_names
+        except Exception as e:
+            st.error(f"Error loading Excel file: {e}")
+            return []
+
+    sheet_names = load_sheets(uploaded_file)
+
+    # Select sheets for 2G, 3G, 4G
+    selected_sheets = {
+        "2G": st.selectbox("Select 2G Sheet Name 📄", sheet_names, index=sheet_names.index("2G") if "2G" in sheet_names else 0),
+        "3G": st.selectbox("Select 3G Sheet Name 📄", sheet_names, index=sheet_names.index("3G") if "3G" in sheet_names else 0),
+        "4G": st.selectbox("Select 4G Sheet Name 📄", sheet_names, index=sheet_names.index("4G") if "4G" in sheet_names else 0)
+    }
+
+    # Load and filter data function
+    def load_and_filter_data(file, sheet_name, selected_cols, pmo_status_values):
+        """Load data from the selected sheet, enforce selected column order, and filter rows."""
+        try:
+            df = pd.read_excel(file, sheet_name=sheet_name, dtype={'ECGI': str})
+            df = df[[col for col in selected_cols if col in df.columns]]
+            df = df[df['PMO Status'].isin(pmo_status_values)].reset_index(drop=True).drop(columns=['PMO Status'])
+            return df
+        except Exception as e:
+            st.error(f"Error processing sheet {sheet_name}: {e}")
+            return pd.DataFrame()
+
+    # Process the Data
+    processed_data = {}
+    for tech in ["2G", "3G", "4G"]:
+        processed_data[tech] = load_and_filter_data(uploaded_file, selected_sheets[tech], def_columns[tech], pmo_status_options)
+
+    # Save Processed Data to an Excel File in Memory
+    output_buffer = io.BytesIO()
+    with pd.ExcelWriter(output_buffer, engine='xlsxwriter') as writer:
+        for tech, df in processed_data.items():
+            df.to_excel(writer, sheet_name=tech, index=False)
+    output_buffer.seek(0)
 
     # Download Button
     st.download_button(
@@ -32,66 +69,6 @@ with pd.ExcelWriter(output_buffer, engine='xlsxwriter') as writer:
         file_name="PTML_Cell_List.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
-
-# Fixed Column Order
-def_columns = {
-    "2G": ['Tech region', 'Site ID', 'Site Type', 'Cell ID simple', 'Current Hgt', 'Beam Width', 'Current Azimuth',
-           'Current E-Tilt', 'New MSC ID', 'New BSC', 'LAC', 'CGI', 'City Name', 'Province', 'District', 'Tehsil',
-           'Sector Name', 'Covered Area', 'BSIC', 'BCCH ARFCN', 'Long', 'Degree', 'Min', 'Sec', 'Latitude',
-           'GSM Antenna', 'DCS Antenna', 'DB Antenna', 'TRIB Antenna', 'Total Antenna Count', 'PMO Status'],
-    
-    "3G": ['Tech region', '2G Site ID', '3G Site ID', 'CL Site Tech', 'Freq. Band', 'Cell ID simple', 'PSC',
-           'RNC ID', 'LAC', 'CGI', '3G Site Name', 'Current Hgt', 'Current Azimuth', 'Current E-Tilt', 'City',
-           'Province', 'District', 'Tehsil', 'Longitude', 'Latitude', 'Site Type', 'Frequency DOWNLINK',
-           'Frequency UPLINK', 'Horizontal BW', 'Vertical BW', 'Antenna Type', 'PMO Status'],
-    
-    "4G": ['Tech region', '4G Site ID', 'Cell No.', '2G Site ID', '3G Site ID', 'eNodeB ID', '4G spectrum BW',
-           'Cell Freq. Band', 'CL Site Tech', 'ECI', 'ECGI', 'TAC', '4G Site Name', 'Current Hgt',
-           'Current Azimuth', 'Current E-Tilt', 'Latitude', 'Longitude', 'Site Type', 'City', 'Province',
-           'District', 'Tehsil', 'New Antenna Type', 'PMO Status']
-}
-
-@st.cache_data
-def load_sheets(file_path):
-    """Load sheet names from the Excel file."""
-    try:
-        return pd.ExcelFile(file_path).sheet_names
-    except Exception as e:
-        st.error(f"Error loading Excel file: {e}")
-        return []
-
-# Load available sheets
-sheet_names = load_sheets(input_path)
-
-# Default sheet selection
-selected_sheets = {
-    "2G": st.selectbox("Select 2G Sheet Name 📄", sheet_names, index=sheet_names.index("2G") if "2G" in sheet_names else 0),
-    "3G": st.selectbox("Select 3G Sheet Name 📄", sheet_names, index=sheet_names.index("3G") if "3G" in sheet_names else 0),
-    "4G": st.selectbox("Select 4G Sheet Name 📄", sheet_names, index=sheet_names.index("4G") if "4G" in sheet_names else 0)
-}
-
-# Let user modify required columns (without column order input)
-selected_columns = {
-    "2G": st.multiselect("Select Required Columns for 2G 📝", def_columns["2G"], default=def_columns["2G"]),
-    "3G": st.multiselect("Select Required Columns for 3G 📝", def_columns["3G"], default=def_columns["3G"]),
-    "4G": st.multiselect("Select Required Columns for 4G 📝", def_columns["4G"], default=def_columns["4G"]),
-}
-
-# Let user select PMO Status values
-pmo_status_options = ["CL", "NCL", "NA", "NCL-relocation", "Planned"]
-selected_pmo_status = st.multiselect("Select PMO Status values 🛠️", pmo_status_options, default=pmo_status_options)
-
-# Load and filter data
-def load_and_filter_data(sheet_name, selected_cols, pmo_status_values):
-    """Load data from the selected sheet, enforce selected column order, and filter rows based on PMO Status."""
-    try:
-        df = pd.read_excel(input_path, sheet_name=sheet_name, dtype={'ECGI': str})
-        df = df[[col for col in selected_cols if col in df.columns]]
-        df = df[df['PMO Status'].isin(pmo_status_values)].reset_index(drop=True).drop(columns=['PMO Status'])
-        return df
-    except Exception as e:
-        st.error(f"Error processing sheet {sheet_name}: {e}")
-        return pd.DataFrame()
 
 # Format Excel file
 def format_excel(file_path):
