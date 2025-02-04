@@ -77,7 +77,7 @@ if uploaded_file:
 
     # Save Processed Data to an Excel File in Memory
     output_buffer = io.BytesIO()
-    with pd.ExcelWriter(output_buffer, engine='xlsxwriter') as writer:
+    with pd.ExcelWriter(output_buffer) as writer:
         for tech, df in processed_data.items():
             df.to_excel(writer, sheet_name=tech, index=False)
     output_buffer.seek(0)
