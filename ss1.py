@@ -1,3 +1,4 @@
+import io
 import os
 import pandas as pd
 import streamlit as st
@@ -16,7 +17,21 @@ st.title("PTML Site Data Base Management")
 # Input and Output File Paths
 #input_path = st.text_input("Input Excel File Path 📂", "C:/Users/UWX161178/S_Shah_Sb/Cells_DB_Mid_Dec_2024.xlsx")
 input_path = st.file_uploader("Upload Excel File 📂", type=["xlsx"])
-output_path = st.text_input("Output Excel File Path 📤", "C:/Users/UWX161178/S_Shah_Sb/PTML_Cell_List.xlsx")
+#output_path = st.text_input("Output Excel File Path 📤", "C:/Users/UWX161178/S_Shah_Sb/PTML_Cell_List.xlsx")
+# Save Processed Data to an Excel File in Memory
+    output_buffer = io.BytesIO()
+    with pd.ExcelWriter(output_buffer, engine='xlsxwriter') as writer:
+        for tech, df in processed_data.items():
+            df.to_excel(writer, sheet_name=tech, index=False)
+    output_buffer.seek(0)
+
+    # Download Button
+    st.download_button(
+        label="Download Processed Excel File 📤",
+        data=output_buffer,
+        file_name="PTML_Cell_List.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
 # Fixed Column Order
 def_columns = {
