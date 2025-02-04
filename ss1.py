@@ -19,11 +19,11 @@ st.title("PTML Site Data Base Management")
 input_path = st.file_uploader("Upload Excel File 📂", type=["xlsx"])
 #output_path = st.text_input("Output Excel File Path 📤", "C:/Users/UWX161178/S_Shah_Sb/PTML_Cell_List.xlsx")
 # Save Processed Data to an Excel File in Memory
-    output_buffer = io.BytesIO()
-    with pd.ExcelWriter(output_buffer, engine='xlsxwriter') as writer:
-        for tech, df in processed_data.items():
-            df.to_excel(writer, sheet_name=tech, index=False)
-    output_buffer.seek(0)
+output_buffer = io.BytesIO()
+with pd.ExcelWriter(output_buffer, engine='xlsxwriter') as writer:
+    for tech, df in processed_data.items():
+        df.to_excel(writer, sheet_name=tech, index=False)
+        output_buffer.seek(0)
 
     # Download Button
     st.download_button(
