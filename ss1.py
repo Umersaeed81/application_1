@@ -10,7 +10,23 @@ from openpyxl.worksheet.dimensions import ColumnDimension
 import warnings
 warnings.simplefilter("ignore")
 
-
+# Fixed Column Order
+def_columns = {
+    "2G": ['Tech region', 'Site ID', 'Site Type', 'Cell ID simple', 'Current Hgt', 'Beam Width', 'Current Azimuth',
+           'Current E-Tilt', 'New MSC ID', 'New BSC', 'LAC', 'CGI', 'City Name', 'Province', 'District', 'Tehsil',
+           'Sector Name', 'Covered Area', 'BSIC', 'BCCH ARFCN', 'Long', 'Degree', 'Min', 'Sec', 'Latitude',
+           'GSM Antenna', 'DCS Antenna', 'DB Antenna', 'TRIB Antenna', 'Total Antenna Count', 'PMO Status'],
+    
+    "3G": ['Tech region', '2G Site ID', '3G Site ID', 'CL Site Tech', 'Freq. Band', 'Cell ID simple', 'PSC',
+           'RNC ID', 'LAC', 'CGI', '3G Site Name', 'Current Hgt', 'Current Azimuth', 'Current E-Tilt', 'City',
+           'Province', 'District', 'Tehsil', 'Longitude', 'Latitude', 'Site Type', 'Frequency DOWNLINK',
+           'Frequency UPLINK', 'Horizontal BW', 'Vertical BW', 'Antenna Type', 'PMO Status'],
+    
+    "4G": ['Tech region', '4G Site ID', 'Cell No.', '2G Site ID', '3G Site ID', 'eNodeB ID', '4G spectrum BW',
+           'Cell Freq. Band', 'CL Site Tech', 'ECI', 'ECGI', 'TAC', '4G Site Name', 'Current Hgt',
+           'Current Azimuth', 'Current E-Tilt', 'Latitude', 'Longitude', 'Site Type', 'City', 'Province',
+           'District', 'Tehsil', 'New Antenna Type', 'PMO Status']
+}
 
 # Streamlit App
 st.title("PTML Site Data Base Management")
@@ -38,6 +54,10 @@ if uploaded_file:
         "4G": st.selectbox("Select 4G Sheet Name 📄", sheet_names, index=sheet_names.index("4G") if "4G" in sheet_names else 0)
     }
 
+    # Let user select PMO Status values
+    pmo_status_options = ["CL", "NCL", "NA", "NCL-relocation", "Planned"]
+    selected_pmo_status = st.multiselect("Select PMO Status values 🛠️", pmo_status_options, default=pmo_status_options)
+
     # Load and filter data function
     def load_and_filter_data(file, sheet_name, selected_cols, pmo_status_values):
         """Load data from the selected sheet, enforce selected column order, and filter rows."""
@@ -53,7 +73,7 @@ if uploaded_file:
     # Process the Data
     processed_data = {}
     for tech in ["2G", "3G", "4G"]:
-        processed_data[tech] = load_and_filter_data(uploaded_file, selected_sheets[tech], def_columns[tech], pmo_status_options)
+        processed_data[tech] = load_and_filter_data(uploaded_file, selected_sheets[tech], def_columns[tech], selected_pmo_status)
 
     # Save Processed Data to an Excel File in Memory
     output_buffer = io.BytesIO()
@@ -69,6 +89,7 @@ if uploaded_file:
         file_name="PTML_Cell_List.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
 
 # Format Excel file
 def format_excel(file_path):
