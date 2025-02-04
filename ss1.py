@@ -1,7 +1,9 @@
+pip install openpyxl
+
 import os
 import pandas as pd
 import streamlit as st
-#import openpyxl
+import openpyxl
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import NamedStyle, Font, Alignment, Border, Side, PatternFill
 from openpyxl.styles import borders
