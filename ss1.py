@@ -14,7 +14,8 @@ warnings.simplefilter("ignore")
 st.title("PTML Site Data Base Management")
 
 # Input and Output File Paths
-input_path = st.text_input("Input Excel File Path 📂", "C:/Users/UWX161178/S_Shah_Sb/Cells_DB_Mid_Dec_2024.xlsx")
+#input_path = st.text_input("Input Excel File Path 📂", "C:/Users/UWX161178/S_Shah_Sb/Cells_DB_Mid_Dec_2024.xlsx")
+input_path = st.file_uploader("Upload Excel File 📂", type=["xlsx"])
 output_path = st.text_input("Output Excel File Path 📤", "C:/Users/UWX161178/S_Shah_Sb/PTML_Cell_List.xlsx")
 
 # Fixed Column Order
